@@ -1,0 +1,65 @@
+# Присоединение к чату
+ws://localhost:3000
+
+{
+  "event": "joinChat",
+  "data": {
+    "chatId": 1
+  }
+}
+
+###
+
+# Отправка сообщения
+ws://localhost:3000
+
+{
+  "event": "sendMessage",
+  "data": {
+    "content": "Hello, world!",
+    "chatId": 1,
+    "senderId": 123
+  }
+}
+
+###
+
+# Получение истории сообщений
+ws://localhost:3000
+
+{
+  "event": "getChatHistory",
+  "data": {
+    "chatId": 1,
+    "page": 1,
+    "limit": 20
+  }
+}
+
+###
+
+# Отметка сообщения как прочитанного
+ws://localhost:3000
+
+{
+  "event": "markAsRead",
+  "data": {
+    "userId": 123,
+    "messageId": 456
+  }
+}
+
+###
+
+# Отключение от чата
+ws://localhost:3000
+
+{
+  "event": "leaveChat",
+  "data": {
+    "chatId": 1
+  }
+}
+
+
+###

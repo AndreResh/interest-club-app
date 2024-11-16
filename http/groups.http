@@ -1,0 +1,42 @@
+# Создание новой группы
+POST http://localhost:3000/group
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "name": "Tech Enthusiasts",
+  "description": "Group for technology enthusiasts",
+  "city": "San Francisco",
+  "location": "Silicon Valley",
+  "maxMembers": 50,
+  "minAge": 18,
+  "maxAge": 50
+}
+
+###
+
+# Получение группы по ID
+GET http://localhost:3000/group/16
+
+###
+
+# Получение всех групп
+GET http://localhost:3000/group
+
+###
+
+# Обновление группы по ID
+PUT http://localhost:3000/group/16
+Content-Type: application/json
+
+{
+  "name": "Advanced Tech Enthusiasts",
+  "description": "Group for experienced tech enthusiasts",
+  "location": "Downtown San Francisco",
+  "maxMembers": 75
+}
+
+###
+
+# Удаление группы по ID
+DELETE http://localhost:3000/group/12

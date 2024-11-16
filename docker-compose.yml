@@ -1,0 +1,16 @@
+services:
+  interest-club-app:
+    image: postgres:13
+    restart: always
+    container_name: interest-club-app
+    environment:
+      POSTGRES_DB: andrew
+      POSTGRES_USER: andrew
+      POSTGRES_PASSWORD: andrew
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

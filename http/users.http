@@ -1,0 +1,37 @@
+# Создать пользователя
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "firstName": "Johns",
+  "email": "johns@example.coms",
+  "lastName": "Does",
+  "password": "passport1234"
+}
+
+###
+
+# Получить пользователя по ID
+GET http://localhost:3000/users/4
+
+###
+
+# Получить всех пользователей
+GET http://localhost:3000/users
+
+###
+
+# Обновить пользователя по ID
+PUT http://localhost:3000/users/6
+Content-Type: application/json
+
+{
+  "firstName": "Johnsoon",
+  "email": "john@example.com",
+  "lastName": "Doeeeeeeee"
+}
+
+###
+
+# Удалить пользователя по ID
+DELETE http://localhost:3000/users/4

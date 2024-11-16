@@ -1,0 +1,28 @@
+# Создание новой заявки
+POST http://localhost:3000/requests
+Content-Type: application/json
+
+{
+  "userId": 2,
+  "groupId": 1
+}
+
+###
+
+# Получение всех заявок для группы
+GET http://localhost:3000/requests/group/16
+
+###
+
+# Принятие заявки
+PUT http://localhost:3000/requests/1/accept
+
+###
+
+# Отклонение заявки
+PUT http://localhost:3000/requests/1/reject
+
+###
+
+# Удаление заявки
+DELETE http://localhost:3000/requests/1

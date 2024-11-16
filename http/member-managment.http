@@ -1,0 +1,2 @@
+# Получение всех участников кружка
+GET http://localhost:3000/members/membership/13
