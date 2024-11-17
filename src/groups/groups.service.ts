@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
@@ -8,8 +8,8 @@ import { mapToUpdate } from '../utils/common';
 import { Membership } from '../member-management/membership.entity';
 import { UserChat, UserChatRoles } from '../chat/entities/user-chat.entity';
 
-import { CreateGroupDto, UpdateGroupDto } from './types';
-import { Group } from './group.entity';
+import { CreateGroupDto, SearchGroupDto, UpdateGroupDto } from './types';
+import { Group, GroupCategory } from './group.entity';
 
 @Injectable()
 export class GroupService {
@@ -117,5 +117,73 @@ export class GroupService {
     if (result.affected === 0) {
       throw new NotFoundException(`Group with ID ${id} not found`);
     }
+  }
+
+  async searchGroups(searchParams: SearchGroupDto): Promise<Group[]> {
+    const query = this.groupRepository.createQueryBuilder('group');
+
+    // Фильтрация по имени
+    if (searchParams.name) {
+      query.andWhere('group.name ILIKE :name', {
+        name: `%${searchParams.name}%`,
+      });
+    }
+
+    // Фильтрация по городу
+    if (searchParams.city) {
+      query.andWhere('group.city ILIKE :city', {
+        city: `%${searchParams.city}%`,
+      });
+    }
+
+    // Фильтрация по месту
+    if (searchParams.location) {
+      query.andWhere('group.location ILIKE :location', {
+        location: `%${searchParams.location}%`,
+      });
+    }
+
+    // Фильтрация по возрасту
+    if (searchParams.minAge) {
+      query.andWhere('group.minAge >= :minAge', {
+        minAge: searchParams.minAge,
+      });
+    }
+    if (searchParams.maxAge) {
+      query.andWhere('group.maxAge <= :maxAge', {
+        maxAge: searchParams.maxAge,
+      });
+    }
+
+    // Фильтрация по количеству участников
+    if (searchParams.maxMembers) {
+      query.andWhere('group.maxMembers >= :maxMembers', {
+        maxMembers: searchParams.maxMembers,
+      });
+    }
+
+    // Фильтрация по категориям
+    if (searchParams.categories) {
+      // Преобразуем строку категорий в массив
+      const categoriesArray = searchParams.categories.split(',').map(category => category.trim());
+      const valuesGroupCategory = Object.values(GroupCategory);
+      // Проверяем, что все элементы массива являются допустимыми категориями
+      const parsedCategories = categoriesArray.map(category => {
+        if (!valuesGroupCategory.includes(category as GroupCategory)) {
+            throw new BadRequestException(`Invalid category: ${category}`);
+        }
+        return category as GroupCategory;
+      });
+
+      // Проверка на уникальность
+      if (new Set(parsedCategories).size !== parsedCategories.length) {
+        throw new BadRequestException('All categories\'s elements must be unique');
+      }
+      query.andWhere('group.categories && :categories', {
+        categories: `{${categoriesArray.join(',')}}`,
+      });
+    }
+
+    return query.getMany();
   }
 }

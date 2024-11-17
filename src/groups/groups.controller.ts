@@ -6,11 +6,12 @@ import {
   Param,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 
 import { Group } from './group.entity';
 import { GroupService } from './groups.service';
-import { CreateGroupDto, UpdateGroupDto } from './types';
+import { CreateGroupDto, SearchGroupDto, UpdateGroupDto } from './types';
 
 @Controller('group')
 export class GroupController {
@@ -22,6 +23,11 @@ export class GroupController {
     @Body() createGroupDto: CreateGroupDto,
   ): Promise<Group> {
     return this.groupService.createGroup(createGroupDto);
+  }
+
+  @Get('search')
+  async searchGroups(@Query() searchParams: SearchGroupDto): Promise<Group[]> {
+    return this.groupService.searchGroups(searchParams);
   }
 
   // Получение группы по ID

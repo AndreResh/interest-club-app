@@ -10,7 +10,8 @@ Content-Type: application/json
   "location": "Silicon Valley",
   "maxMembers": 50,
   "minAge": 18,
-  "maxAge": 50
+  "maxAge": 50,
+  "categories": ["art"]
 }
 
 ###
@@ -26,17 +27,24 @@ GET http://localhost:3000/group
 ###
 
 # Обновление группы по ID
-PUT http://localhost:3000/group/16
+PUT http://localhost:3000/group/1
 Content-Type: application/json
 
 {
   "name": "Advanced Tech Enthusiasts",
   "description": "Group for experienced tech enthusiasts",
   "location": "Downtown San Francisco",
-  "maxMembers": 75
+  "maxMembers": 75,
+  "categories": ["sports"]
 }
 
 ###
 
 # Удаление группы по ID
 DELETE http://localhost:3000/group/12
+
+###
+
+GET http://localhost:3000/group/search?categories=sport,art
+
+

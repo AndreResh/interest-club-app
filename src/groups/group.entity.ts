@@ -9,6 +9,14 @@ import {
 
 import { Chat } from '../chat/entities/chat.entity';
 
+export enum GroupCategory {
+  SPORTS = 'sports',
+  ART = 'art',
+  MUSIC = 'music',
+  EDUCATION = 'education',
+  TRAVEL = 'travel',
+}
+
 @Entity()
 export class Group {
   @PrimaryGeneratedColumn('increment')
@@ -47,4 +55,11 @@ export class Group {
   @OneToOne(() => Chat, (chat) => chat.group, { cascade: ['insert', 'update', 'remove'] })
   @JoinColumn()
   chat: Chat; // Чат группы
+
+  @Column({
+    type: 'enum',
+    enum: GroupCategory,
+    array: true, // Указываем, что это массив
+  })
+  categories: GroupCategory[]; // Список категорий
 }

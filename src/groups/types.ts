@@ -5,7 +5,13 @@ import {
   IsPositive,
   MaxLength,
   Max,
+  IsEnum,
+  IsArray,
+  ArrayNotEmpty,
+  ArrayUnique,
 } from 'class-validator';
+
+import { GroupCategory } from './group.entity';
 
 export class CreateGroupDto {
   @IsString()
@@ -41,6 +47,12 @@ export class CreateGroupDto {
   @IsInt()
   @IsPositive()
   maxAge: number;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsEnum(GroupCategory, { each: true })
+  categories: GroupCategory[];
 }
 
 export class UpdateGroupDto {
@@ -78,4 +90,47 @@ export class UpdateGroupDto {
   @IsInt()
   @IsPositive()
   maxAge?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsEnum(GroupCategory, { each: true })
+  categories?: GroupCategory[];
+}
+
+export class SearchGroupDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  location?: string;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  minAge?: number;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  maxAge?: number;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  maxMembers?: number;
+
+  @IsOptional()
+  @IsString()
+  categories?: string;
 }
