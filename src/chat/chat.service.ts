@@ -2,28 +2,41 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
 
-import { Chat } from './entities/chat.entity';
 import { Message } from './entities/message.entity';
 import { MessageReadStatus } from './entities/message-read-status';
+import { MediaFile } from './types';
+import { MinioService } from './minio.service';
 
 @Injectable()
 export class ChatService {
   constructor(
-    @InjectRepository(Chat) private chatRepository: Repository<Chat>,
     @InjectRepository(Message) private messageRepository: Repository<Message>,
     @InjectRepository(MessageReadStatus)
     private readStatusRepository: Repository<MessageReadStatus>,
+    private readonly minioService: MinioService,
   ) {}
 
   async sendMessage(
     chatId: number,
     senderId: number,
     content: string,
+    mediaFile?: MediaFile,
   ): Promise<Message> {
+    let mediaUrl: string | undefined;
+
+    if (mediaFile) {
+      mediaUrl = await this.minioService.uploadFile(
+        mediaFile.buffer,
+        mediaFile.originalname,
+        mediaFile.mimetype,
+      );
+    }
+
     const message = this.messageRepository.create({
       chat: { id: chatId },
       sender: { id: senderId },
       content,
+      mediaUrl,
     });
     const savedMessage = await this.messageRepository.save(message);
 

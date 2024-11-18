@@ -16,10 +16,15 @@ ws://localhost:3000
 {
   "event": "sendMessage",
   "data": {
-    "content": "Hello, world!",
-    "chatId": 1,
-    "senderId": 123
+  "chatId": 1,
+  "senderId": 1,
+  "content": "Check out this photo!",
+  "mediaFile": {
+    "buffer": "Base64-encoded content",
+    "originalname": "photo.jpg",
+    "mimetype": "image/jpeg"
   }
+}
 }
 
 ###

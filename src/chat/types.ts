@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsInt } from 'class-validator';
+import { IsNotEmpty, IsString, IsInt, IsOptional } from 'class-validator';
 
 export class CreateMessageDto {
   @IsNotEmpty()
@@ -10,4 +10,13 @@ export class CreateMessageDto {
 
   @IsInt()
   senderId: number; // Идентификатор отправителя (пользователя)
+
+  @IsOptional()
+  mediaFile?: MediaFile;
+}
+
+export type MediaFile = {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
 }

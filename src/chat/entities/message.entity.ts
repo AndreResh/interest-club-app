@@ -24,6 +24,9 @@ export class Message {
   @ManyToOne(() => Chat, { eager: true })
   @JoinColumn()
   chat: Chat;
+  
+  @Column({ type: 'varchar', nullable: true })
+  mediaUrl?: string; // URL для мультимедиа
 
   @Column('text')
   content: string;

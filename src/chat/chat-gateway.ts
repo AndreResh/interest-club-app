@@ -34,7 +34,7 @@ export class ChatGateway {
   @SubscribeMessage('getChatHistory')
   async handleGetChatHistory(
     @MessageBody()
-      { chatId, page, limit }: { chatId: number; page: number; limit: number },
+    { chatId, page, limit }: { chatId: number; page: number; limit: number },
     @ConnectedSocket() client: Socket,
   ) {
     const chatHistory = await this.chatService.getChatHistory(
@@ -51,14 +51,17 @@ export class ChatGateway {
     @MessageBody() createMessageDto: CreateMessageDto,
     @ConnectedSocket() client: Socket,
   ) {
+    const { chatId, senderId, content, mediaFile } = createMessageDto;
+
     const message = await this.chatService.sendMessage(
-      createMessageDto.chatId,
-      createMessageDto.senderId,
-      createMessageDto.content,
+      chatId,
+      senderId,
+      content,
+      mediaFile,
     );
 
     // Отправляем сообщение всем подключённым пользователям в этот чат
-    this.server.to(createMessageDto.chatId.toString()).emit('message', message);
+    this.server.to(chatId.toString()).emit('message', message);
   }
 
   // Отметить сообщение как прочитанное

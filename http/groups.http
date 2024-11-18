@@ -45,6 +45,6 @@ DELETE http://localhost:3000/group/12
 
 ###
 
-GET http://localhost:3000/group/search?categories=sport,art
+GET http://localhost:3000/group/search?categories=sports,art
 
 
