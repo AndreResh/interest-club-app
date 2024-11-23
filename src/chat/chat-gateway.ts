@@ -79,6 +79,20 @@ export class ChatGateway {
     this.server.to(client.id).emit('messageReadStatus', readStatus);
   }
 
+  @SubscribeMessage('getMediaFile')
+  async handleGetMediaFile(
+    @MessageBody() { fileKey }: { fileKey: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const fileUrl = await this.chatService.getMediaFileUrl(fileKey);
+      this.server.to(client.id).emit('mediaFileUrl', { fileKey, fileUrl });
+    } catch (error) {
+      console.error('Error fetching media file:', error);
+      this.server.to(client.id).emit('error', { message: 'Unable to fetch media file' });
+    }
+  }
+
   // Отключение пользователя от чата
   @SubscribeMessage('leaveChat')
   handleLeaveChat(

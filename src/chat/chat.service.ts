@@ -68,12 +68,24 @@ export class ChatService {
     page = 1,
     limit = 20,
   ): Promise<Message[]> {
-    const skip = (page - 1) * limit;
-    return this.messageRepository.find({
+    const messages = await this.messageRepository.find({
       where: { chat: { id: chatId } },
       order: { sentAt: 'ASC' },
-      skip: skip,
+      skip: (page - 1) * limit,
       take: limit,
     });
+
+    return Promise.all(
+      messages.map(async (message) => {
+        if (message.mediaUrl) {
+          message.mediaUrl = await this.minioService.getFileUrl(message.mediaUrl.split('/').pop()!);
+        }
+        return message;
+      }),
+    );
+  }
+
+  async getMediaFileUrl(fileKey: string): Promise<string> {
+    return this.minioService.getFileUrl(fileKey);
   }
 }

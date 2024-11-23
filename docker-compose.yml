@@ -24,16 +24,5 @@ services:
       - ./minio_data:/data
     command: server /data --console-address ":9001"
 
-  minio-console:
-    image: minio/console
-    container_name: minio-console
-    depends_on:
-      - minio
-    ports:
-      - "9002:9001"
-    environment:
-      MINIO_ROOT_USER: andrew123
-      MINIO_ROOT_PASSWORD: andrew123
-
 volumes:
   postgres_data:

@@ -34,6 +34,15 @@ export class MinioService {
       })
       .promise();
 
-    return `${this.s3.endpoint.href}${bucketName}/${uniqueFileName}`;
+    return `${bucketName}/${uniqueFileName}`;
+  }
+
+  async getFileUrl(fileKey: string): Promise<string> {
+    const bucketName = 'media';
+    return this.s3.getSignedUrlPromise('getObject', {
+      Bucket: bucketName,
+      Key: fileKey,
+      Expires: 60 * 60,
+    });
   }
 }
