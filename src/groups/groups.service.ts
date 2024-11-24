@@ -3,10 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { User } from '../users/user.entity';
-import { Chat } from '../chat/entities/chat.entity';
+import { Chat } from '../chat/entity/chat.entity';
 import { mapToUpdate } from '../utils/common';
 import { Membership } from '../member-management/membership.entity';
-import { UserChat, UserChatRoles } from '../chat/entities/user-chat.entity';
+import { UserChat, UserChatRoles } from '../chat/entity/user-chat.entity';
 
 import { CreateGroupDto, SearchGroupDto, UpdateGroupDto } from './types';
 import { Group, GroupCategory } from './group.entity';

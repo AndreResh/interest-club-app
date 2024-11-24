@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ChatService } from './chat.service';
-import { Message } from './entities/message.entity';
-import { MessageReadStatus } from './entities/message-read-status';
-import { Chat } from './entities/chat.entity';
+import { Message } from './entity/message.entity';
+import { MessageReadStatus } from './entity/message-read-status';
+import { Chat } from './entity/chat.entity';
 import { ChatGateway } from './chat-gateway';
 import { MinioService } from './minio.service';
 

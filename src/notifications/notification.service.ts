@@ -2,8 +2,8 @@
 // import { Injectable } from '@nestjs/common';
 // import { InjectRepository } from '@nestjs/typeorm';
 // import { Repository } from 'typeorm';
-// import { Notification } from './entities/notification.entity';
-// import { NotificationPreference } from './entities/notification-preference.entity';
+// import { Notification } from './entity/notification.entity';
+// import { NotificationPreference } from './entity/notification-preference.entity';
 // import { Server } from 'socket.io';
 // import { Inject } from '@nestjs/common';
 // import { User } from '../users/user.entity';

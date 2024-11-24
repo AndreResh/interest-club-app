@@ -7,6 +7,7 @@ import { ChatModule } from './chat/chat.module';
 import { MemberManagementModule } from './member-management/member-management.module';
 import { RequestManagementModule } from './request-management/request-management.module';
 import { UsersModule } from './users/users.module';
+import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UsersModule } from './users/users.module';
     MemberManagementModule,
     RequestManagementModule,
     UsersModule,
+    QuestionnaireModule,
   ],
 })
 export class AppModule {}

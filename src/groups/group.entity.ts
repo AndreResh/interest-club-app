@@ -4,10 +4,12 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   CreateDateColumn,
-  OneToOne, JoinColumn,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
 
-import { Chat } from '../chat/entities/chat.entity';
+import { Chat } from '../chat/entity/chat.entity';
+import { Questionnaire } from '../questionnaire/entity/questionnaire.entity';
 
 export enum GroupCategory {
   SPORTS = 'sports',
@@ -52,9 +54,18 @@ export class Group {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToOne(() => Chat, (chat) => chat.group, { cascade: ['insert', 'update', 'remove'] })
+  @OneToOne(() => Chat, (chat) => chat.group, {
+    cascade: ['insert', 'update', 'remove'],
+  })
   @JoinColumn()
   chat: Chat; // Чат группы
+
+  @OneToOne(() => Questionnaire, (questionnaire) => questionnaire.group, {
+    cascade: true,
+    nullable: true,
+  })
+  @JoinColumn()
+  questionnaire: Questionnaire; // Анкета группы
 
   @Column({
     type: 'enum',

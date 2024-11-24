@@ -1,0 +1,50 @@
+### Создать анкету
+POST http://localhost:3000/questionnaires
+Content-Type: application/json
+
+{
+  "title": "Анкета для вступления в группу",
+  "groupId": 1,
+  "questions": [
+    { "text": "Почему вы хотите присоединиться?", "isRequired": true },
+    { "text": "Ваши хобби?", "isRequired": false }
+  ]
+}
+
+### Получить анкету по ID
+GET http://localhost:3000/questionnaires/1
+
+### Обновить анкету
+PUT http://localhost:3000/questionnaires/1
+Content-Type: application/json
+
+{
+  "title": "Обновленная анкета",
+  "questions": [
+    {
+      "id": 1,
+      "text": "Почему вы хотите участвовать?",
+      "isRequired": true
+    },
+    {
+      "id": 2,
+      "text": "Ваши любимые книги?",
+      "isRequired": false
+    }
+  ]
+}
+
+### Удалить анкету
+DELETE http://localhost:3000/questionnaires/1
+
+### Сохранить ответы на анкету
+POST http://localhost:3000/questionnaires/1/answers
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "answers": [
+    { "questionId": 1, "answer": "Иван Иванов" },
+    { "questionId": 2, "answer": "25 лет" }
+  ]
+}

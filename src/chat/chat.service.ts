@@ -2,8 +2,8 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
 
-import { Message } from './entities/message.entity';
-import { MessageReadStatus } from './entities/message-read-status';
+import { Message } from './entity/message.entity';
+import { MessageReadStatus } from './entity/message-read-status';
 import { MediaFile } from './types';
 import { MinioService } from './minio.service';
 

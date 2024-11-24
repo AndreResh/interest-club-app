@@ -9,7 +9,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Group } from '../groups/group.entity';
 import { User } from '../users/user.entity';
 import { Membership } from '../member-management/membership.entity';
-import { UserChat } from '../chat/entities/user-chat.entity';
+import { UserChat } from '../chat/entity/user-chat.entity';
 import { MemberManagementService } from '../member-management/member-management.service';
 
 import { CreateGroupDto } from './types';

@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { User } from '../users/user.entity';
-import { Chat } from '../chat/entities/chat.entity';
+import { Chat } from '../chat/entity/chat.entity';
 import { Membership } from '../member-management/membership.entity';
-import { UserChat } from '../chat/entities/user-chat.entity';
+import { UserChat } from '../chat/entity/user-chat.entity';
 
 import { Group } from './group.entity';
 import { GroupController } from './groups.controller';

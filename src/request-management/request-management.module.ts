@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { User } from '../users/user.entity';
 import { Membership } from '../member-management/membership.entity';
-import { UserChat } from '../chat/entities/user-chat.entity';
+import { UserChat } from '../chat/entity/user-chat.entity';
 import { Group } from '../groups/group.entity';
 import { MemberManagementModule } from '../member-management/member-management.module';
 

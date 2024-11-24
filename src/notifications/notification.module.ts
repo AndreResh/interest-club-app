@@ -2,8 +2,8 @@
 // import { NotificationService } from './notification.service';
 // import { NotificationController } from './notification.controller';
 // import { TypeOrmModule } from '@nestjs/typeorm';
-// import { Notification } from './entities/notification.entity';
-// import { NotificationPreference } from './entities/notification-preference.entity';
+// import { Notification } from './entity/notification.entity';
+// import { NotificationPreference } from './entity/notification-preference.entity';
 // import { BullModule } from '@nestjs/bull';
 //
 // @Module({
