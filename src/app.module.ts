@@ -8,6 +8,7 @@ import { MemberManagementModule } from './member-management/member-management.mo
 import { RequestManagementModule } from './request-management/request-management.module';
 import { UsersModule } from './users/users.module';
 import { QuestionnaireModule } from './questionnaire/questionnaire.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { QuestionnaireModule } from './questionnaire/questionnaire.module';
     RequestManagementModule,
     UsersModule,
     QuestionnaireModule,
+    ReviewModule,
   ],
 })
 export class AppModule {}

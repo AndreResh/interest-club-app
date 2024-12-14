@@ -1,0 +1,40 @@
+### Создание отзыва
+POST http://localhost:3000/reviews
+Content-Type: application/json
+Authorization: Bearer <ваш_токен>
+
+{
+  "comment": "Отличный кружок!",
+  "rating": 5,
+  "groupId": 1
+}
+
+###
+
+### Получение всех отзывов по группе
+GET http://localhost:3000/reviews/group/1
+Authorization: Bearer <ваш_токен>
+
+###
+
+### Получение всех отзывов пользователя
+GET http://localhost:3000/reviews/user/1
+Authorization: Bearer <ваш_токен>
+
+###
+
+### Обновление отзыва
+PATCH http://localhost:3000/reviews/1
+Content-Type: application/json
+Authorization: Bearer <ваш_токен>
+
+{
+  "comment": "Обновленный комментарий",
+  "rating": 6
+}
+
+###
+
+### Удаление отзыва
+DELETE http://localhost:3000/reviews/1
+Authorization: Bearer <ваш_токен>
