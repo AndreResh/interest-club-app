@@ -23,6 +23,15 @@ services:
     volumes:
       - ./minio_data:/data
     command: server /data --console-address ":9001"
+  redis:
+    image: redis
+    container_name: redis
+    restart: always
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
 
 volumes:
   postgres_data:
+  redis_data:

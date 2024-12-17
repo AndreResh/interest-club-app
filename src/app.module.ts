@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
+import { RedisModule } from '@nestjs-modules/ioredis';
 
 import { GroupsModule } from './groups/groups.module';
 import { ChatModule } from './chat/chat.module';
@@ -13,7 +15,8 @@ import { ReviewModule } from './review/review.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,
+      isGlobal: true, // Делаем ConfigModule глобальным
+      envFilePath: ['.env'], // Считываем переменные из файла .env
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
@@ -24,6 +27,14 @@ import { ReviewModule } from './review/review.module';
       database: process.env.DB_NAME,
       autoLoadEntities: true,
       synchronize: true,
+    }),
+    RedisModule.forRoot({
+      type: 'single',  // Тип подключения - одиночный Redis сервер
+      url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,  // Строка подключения
+      options: {
+        password: process.env.REDIS_PASSWORD,
+        db: parseInt(process.env.REDIS_DB, 10),
+      }
     }),
     GroupsModule,
     ChatModule,
