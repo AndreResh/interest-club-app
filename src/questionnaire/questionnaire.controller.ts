@@ -62,7 +62,8 @@ export class QuestionnaireController {
     @Param('id') questionnaireId: number,
     @Body() createAnswerDto: CreateAnswerDto,
   ): Promise<void> {
-    const { userId, answers } = createAnswerDto;
+    const userId = 1; // потом из JWT доставать
+    const { answers } = createAnswerDto;
     await this.questionnaireService.createAnswers(
       userId,
       questionnaireId,

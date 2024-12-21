@@ -5,9 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 
 import { mapToUpdate } from '../utils/common';
 import { Group } from '../groups/group.entity';
+import { CacheService } from '../utils/cache.service';
 
 import { Questionnaire } from './entity/questionnaire.entity';
 import { Question } from './entity/question.entity';
@@ -20,6 +22,8 @@ import { Answer } from './entity/answer.entity';
 
 @Injectable()
 export class QuestionnaireService {
+  private readonly cacheTtl: number;
+
   constructor(
     @InjectRepository(Questionnaire)
     private readonly questionnaireRepository: Repository<Questionnaire>,
@@ -28,7 +32,14 @@ export class QuestionnaireService {
     @InjectRepository(Answer)
     private readonly answerRepository: Repository<Answer>,
     private readonly dataSource: DataSource,
-  ) {}
+    private readonly cacheService: CacheService,
+    private readonly configService: ConfigService,
+  ) {
+    this.cacheTtl = parseInt(
+      this.configService.get<string>('CACHE_TTL_QUESTIONNAIRE', '300'),
+      10,
+    );
+  }
 
   // Создать анкету с массивом вопросов
   async createQuestionnaire(
@@ -36,13 +47,11 @@ export class QuestionnaireService {
   ): Promise<QuestionnaireResponseDto> {
     const { title, groupId, questions } = createQuestionnaireDto;
 
-    // Начинаем транзакцию
     const queryRunner: QueryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // Проверяем, существует ли группа
       const group = await queryRunner.manager.findOne(Group, {
         where: { id: groupId },
       });
@@ -50,7 +59,6 @@ export class QuestionnaireService {
         throw new NotFoundException('Group not found');
       }
 
-      // Создаём анкету
       const questionnaire = queryRunner.manager.create(Questionnaire, {
         title,
         group,
@@ -60,7 +68,6 @@ export class QuestionnaireService {
         questionnaire,
       );
 
-      // Привязываем вопросы к анкете
       const questionEntities = questions.map((question) =>
         queryRunner.manager.create(Question, {
           text: question.text,
@@ -73,14 +80,11 @@ export class QuestionnaireService {
         questionEntities,
       );
 
-      // Обновляем ID анкеты в группе
       group.questionnaire = savedQuestionnaire;
       await queryRunner.manager.save(Group, group);
 
-      // Завершаем транзакцию
       await queryRunner.commitTransaction();
 
-      // Возвращаем DTO с результатом
       return {
         id: savedQuestionnaire.id,
         title: savedQuestionnaire.title,
@@ -92,17 +96,23 @@ export class QuestionnaireService {
         })),
       };
     } catch (error) {
-      // Откатываем изменения в случае ошибки
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      // Закрываем соединение
       await queryRunner.release();
     }
   }
 
-  // Получить анкету по ID
+  // Получить анкету по ID с использованием кэша
   async getQuestionnaireById(id: number): Promise<QuestionnaireResponseDto> {
+    const cacheKey = `questionnaire_${id}`;
+    const cachedQuestionnaire =
+      await this.cacheService.get<QuestionnaireResponseDto>(cacheKey);
+
+    if (cachedQuestionnaire) {
+      return cachedQuestionnaire;
+    }
+
     const questionnaire = await this.questionnaireRepository.findOne({
       where: { id },
       relations: ['group'],
@@ -116,7 +126,7 @@ export class QuestionnaireService {
       questionnaire: { id },
     });
 
-    return {
+    const result: QuestionnaireResponseDto = {
       id: questionnaire.id,
       title: questionnaire.title,
       groupId: questionnaire.group.id,
@@ -126,8 +136,14 @@ export class QuestionnaireService {
         isRequired: question.isRequired,
       })),
     };
+
+    // Сохраняем результат в кэш
+    await this.cacheService.set(cacheKey, result, this.cacheTtl);
+
+    return result;
   }
 
+  // Обновить анкету
   async updateQuestionnaire(
     id: number,
     updateQuestionnaireDto: UpdateQuestionnaireDto,
@@ -141,10 +157,8 @@ export class QuestionnaireService {
       throw new NotFoundException(`Questionnaire with id ${id} not found`);
     }
 
-    // Обновляем разрешенные поля анкеты
     mapToUpdate(questionnaire, updateQuestionnaireDto);
 
-    // Работаем с массивом вопросов
     if (updateQuestionnaireDto.questions) {
       const existingQuestions = await this.questionRepository.findBy({
         questionnaire: { id },
@@ -153,7 +167,6 @@ export class QuestionnaireService {
       const updatedQuestions = updateQuestionnaireDto.questions.map(
         (question) => {
           if (question.id) {
-            // Обновляем существующий вопрос
             const existingQuestion = existingQuestions.find(
               (eq) => eq.id === question.id,
             );
@@ -163,7 +176,6 @@ export class QuestionnaireService {
             }
           }
 
-          // Добавляем новый вопрос
           return this.questionRepository.create({
             text: question.text,
             isRequired: question.isRequired,
@@ -172,7 +184,6 @@ export class QuestionnaireService {
         },
       );
 
-      // Удаляем вопросы, которых больше нет в DTO
       const updatedQuestionIds = updatedQuestions
         .map((question) => question.id)
         .filter(Boolean);
@@ -183,7 +194,6 @@ export class QuestionnaireService {
       await this.questionRepository.remove(questionsToRemove);
     }
 
-    // Сохраняем обновленную анкету
     const updatedQuestionnaire =
       await this.questionnaireRepository.save(questionnaire);
 
@@ -191,7 +201,8 @@ export class QuestionnaireService {
       questionnaire: { id },
     });
 
-    return {
+    // Обновляем кэш после изменений
+    const result: QuestionnaireResponseDto = {
       id: updatedQuestionnaire.id,
       title: updatedQuestionnaire.title,
       groupId: updatedQuestionnaire.group.id,
@@ -201,22 +212,29 @@ export class QuestionnaireService {
         isRequired: question.isRequired,
       })),
     };
+
+    await this.cacheService.set(`questionnaire_${id}`, result, this.cacheTtl);
+
+    return result;
   }
 
-  // Удалить анкету по ID
+  // Удалить анкету
   async deleteQuestionnaire(id: number): Promise<void> {
     const result = await this.questionnaireRepository.delete(id);
     if (result.affected === 0) {
-      throw new NotFoundException(`Group with ID ${id} not found`);
+      throw new NotFoundException(`Questionnaire with ID ${id} not found`);
     }
+
+    // Удаляем кэш
+    await this.cacheService.del(`questionnaire_${id}`);
   }
 
+  // Сохранить ответы
   async createAnswers(
     userId: number,
     questionnaireId: number,
     answers: { questionId: number; answer: string }[],
   ): Promise<void> {
-    // Проверяем, существует ли анкета
     const questionnaire = await this.questionnaireRepository.findOne({
       where: { id: questionnaireId },
       relations: ['group'],
@@ -228,7 +246,6 @@ export class QuestionnaireService {
       );
     }
 
-    // Получаем список всех вопросов анкеты
     const questions = await this.questionRepository.findBy({
       questionnaire: { id: questionnaireId },
     });
@@ -239,7 +256,6 @@ export class QuestionnaireService {
       );
     }
 
-    // Проверяем, все ли обязательные вопросы получили ответы
     const requiredQuestionIds = questions
       .filter((q) => q.isRequired)
       .map((q) => q.id);
@@ -256,7 +272,6 @@ export class QuestionnaireService {
       );
     }
 
-    // Создаём ответы
     const answerEntities = answers.map((a) =>
       this.answerRepository.create({
         userId,
@@ -266,7 +281,6 @@ export class QuestionnaireService {
       }),
     );
 
-    // Сохраняем ответы в базе данных
     await this.answerRepository.save(answerEntities);
   }
 }

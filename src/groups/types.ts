@@ -42,10 +42,6 @@ export class CreateGroupDto {
 
   @IsInt()
   @IsPositive()
-  userId: number; // ID пользователя, который создает группу
-
-  @IsInt()
-  @IsPositive()
   maxAge: number;
 
   @IsArray()

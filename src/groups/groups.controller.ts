@@ -22,7 +22,8 @@ export class GroupController {
   async createGroup(
     @Body() createGroupDto: CreateGroupDto,
   ): Promise<Group> {
-    return this.groupService.createGroup(createGroupDto);
+    const userId = 1; // из JWT
+    return this.groupService.createGroup(userId, createGroupDto);
   }
 
   @Get('search')

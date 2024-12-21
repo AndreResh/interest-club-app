@@ -1,11 +1,11 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { Repository } from 'typeorm';
-import Redis from 'ioredis';
-import { InjectRedis } from '@nestjs-modules/ioredis';
+import { InjectRepository } from '@nestjs/typeorm';
 
 import { Group } from '../groups/group.entity';
+import { CacheService } from '../utils/cache.service';
+import { mapToUpdate } from '../utils/common';
 
 import { Review } from './review.entity';
 import { CreateReviewDto, UpdateReviewDto } from './types';
@@ -17,10 +17,9 @@ export class ReviewService {
   constructor(
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
-    @InjectRepository(Group)
-    private readonly groupRepository: Repository<Group>,
-    @InjectRedis() private readonly redis: Redis,
+    private readonly cacheService: CacheService,
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
   ) {
     this.cacheTtl = parseInt(
       this.configService.get<string>('CACHE_TTL_REVIEWS', '300'),
@@ -28,37 +27,58 @@ export class ReviewService {
     );
   }
 
-  async create(userId: number, createReviewDto: CreateReviewDto): Promise<Review> {
+  async create(
+    userId: number,
+    createReviewDto: CreateReviewDto,
+  ): Promise<Review> {
     const { groupId, ...reviewData } = createReviewDto;
 
-    const group = await this.groupRepository.findOne({ where: { id: groupId } });
-    if (!group) {
-      throw new NotFoundException(`Group with id ${groupId} not found`);
+    const queryRunner: QueryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const group = await queryRunner.manager.findOne(Group, {
+        where: { id: groupId },
+      });
+
+      if (!group) {
+        throw new NotFoundException(`Group with id ${groupId} not found`);
+      }
+
+      const review = queryRunner.manager.create(Review, {
+        ...reviewData,
+        user: { id: userId },
+        group,
+      });
+      const savedReview = await queryRunner.manager.save(Review, review);
+
+      const reviews = await queryRunner.manager.find(Review, {
+        where: { group: { id: groupId } },
+      });
+
+      await this.cacheService.set(
+        `reviews:group:${groupId}`,
+        reviews,
+        this.cacheTtl,
+      );
+
+      await queryRunner.commitTransaction();
+      return savedReview;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    const review = this.reviewRepository.create({
-      ...reviewData,
-      user: { id: userId },
-      group,
-    });
-
-    const savedReview = await this.reviewRepository.save(review);
-
-    // 1. Получаем актуальные данные
-    const reviews = await this.reviewRepository.find({
-      where: { group: { id: groupId } },
-    });
-
-    await this.setCache(`reviews:group:${groupId}`, reviews);
-
-    return savedReview;
   }
-
+  
   async findAll(groupId: number): Promise<Review[]> {
+    const cacheKey = `reviews:group:${groupId}`;
     // Пробуем получить данные из кэша
-    const cachedReviews = await this.redis.get(`reviews:group:${groupId}`);
+    const cachedReviews = await this.cacheService.get<Review[]>(cacheKey);
     if (cachedReviews) {
-      return JSON.parse(cachedReviews); // Возвращаем кэшированные данные
+      return cachedReviews;
     }
 
     // Если кэш не найден, загружаем из базы данных
@@ -66,63 +86,84 @@ export class ReviewService {
       where: { group: { id: groupId } },
     });
 
-    await this.setCache(`reviews:group:${groupId}`, reviews);
+    await this.cacheService.set(cacheKey, reviews, this.cacheTtl);
 
     return reviews;
   }
-
+  
   async update(id: number, updateReviewDto: UpdateReviewDto): Promise<Review> {
-    const review = await this.reviewRepository.findOne({
-      where: { id },
-      relations: ['group'], // Загружаем группу, чтобы знать, какой кэш удалить
-    });
-    if (!review) {
-      throw new NotFoundException(`Review with id ${id} not found`);
+    const queryRunner: QueryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const review = await queryRunner.manager.findOne(Review, {
+        where: { id },
+        relations: ['group'],
+      });
+
+      if (!review) {
+        throw new NotFoundException(`Review with id ${id} not found`);
+      }
+
+      mapToUpdate(review, updateReviewDto);
+      const updatedReview = await queryRunner.manager.save(Review, review);
+
+      const groupId = review.group.id;
+      const reviews = await queryRunner.manager.find(Review, {
+        where: { group: { id: groupId } },
+      });
+
+      await this.cacheService.set(
+        `reviews:group:${groupId}`,
+        reviews,
+        this.cacheTtl,
+      );
+
+      await queryRunner.commitTransaction();
+      return updatedReview;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-    const groupId = review.group.id;
-
-    Object.assign(review, updateReviewDto);
-    const updatedReview = await this.reviewRepository.save(review);
-
-    const reviews = await this.reviewRepository.find({
-      where: { group: { id: groupId } },
-    });
-
-    await this.setCache(`reviews:group:${groupId}`, reviews);
-
-    return updatedReview;
   }
 
   async remove(id: number): Promise<void> {
-    const review = await this.reviewRepository.findOne({
-      where: { id },
-      relations: ['group'], // Загружаем группу, чтобы знать, какой кэш удалить
-    });
-    if (!review) {
-      throw new NotFoundException(`Review with id ${id} not found`);
-    }
-    const groupId = review.group.id;
+    const queryRunner: QueryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    await this.reviewRepository.remove(review);
-
-    const reviews = await this.reviewRepository.find({
-      where: { group: { id: groupId } },
-    });
-
-    await this.setCache(`reviews:group:${groupId}`, reviews);
-  }
-
-  private async setCache(key: string, value: unknown): Promise<void> {
     try {
-      await this.redis.set(
-        key,
-        JSON.stringify(value),
-        'EX',
+      const review = await queryRunner.manager.findOne(Review, {
+        where: { id },
+        relations: ['group'],
+      });
+
+      if (!review) {
+        throw new NotFoundException(`Review with id ${id} not found`);
+      }
+
+      const groupId = review.group.id;
+      await queryRunner.manager.remove(Review, review);
+
+      const reviews = await queryRunner.manager.find(Review, {
+        where: { group: { id: groupId } },
+      });
+
+      await this.cacheService.set(
+        `reviews:group:${groupId}`,
+        reviews,
         this.cacheTtl,
       );
+
+      await queryRunner.commitTransaction();
     } catch (error) {
-      const err = error as Error;
-      console.error(`Error setting cache: ${err.message}`);
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
   }
 }

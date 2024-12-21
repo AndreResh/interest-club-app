@@ -81,8 +81,6 @@ export class AnswerDto {
 }
 
 export class CreateAnswerDto {
-  @IsInt()
-  userId: number;
 
   @IsArray()
   @ValidateNested({ each: true })

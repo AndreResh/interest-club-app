@@ -1,18 +1,26 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 
 import { User } from '../users/user.entity';
 import { Chat } from '../chat/entity/chat.entity';
 import { mapToUpdate } from '../utils/common';
 import { Membership } from '../member-management/membership.entity';
 import { UserChat, UserChatRoles } from '../chat/entity/user-chat.entity';
+import { CacheService } from '../utils/cache.service';
 
 import { CreateGroupDto, SearchGroupDto, UpdateGroupDto } from './types';
 import { Group, GroupCategory } from './group.entity';
 
 @Injectable()
 export class GroupService {
+  private readonly cacheTtl: number;
+  
   constructor(
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
@@ -25,36 +33,35 @@ export class GroupService {
     @InjectRepository(UserChat)
     private readonly userChatRepository: Repository<UserChat>,
     private readonly dataSource: DataSource,
-  ) {}
+    private readonly cacheService: CacheService,
+    private readonly configService: ConfigService,
+  ) {
+    this.cacheTtl = parseInt(
+      this.configService.get<string>('CACHE_TTL_GROUPS', '300'),
+      10,
+    );
+  }
 
-  async createGroup(createGroupDto: CreateGroupDto): Promise<Group> {
+  async createGroup(userId: number, createGroupDto: CreateGroupDto): Promise<Group> {
     const queryRunner = this.dataSource.createQueryRunner();
-
-    // Начало новой транзакции
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const { userId } = createGroupDto;
-
-      // Поиск пользователя
       const user = await this.userRepository.findOne({ where: { id: userId } });
       if (!user) {
         throw new NotFoundException(`Пользователь с ID ${userId} не найден`);
       }
 
-      // Создание нового чата
       const chat = this.chatRepository.create();
       const savedChat = await queryRunner.manager.save(chat);
 
-      // Создание новой группы, связанной с чатом
       const group = this.groupRepository.create({
         ...createGroupDto,
         chat: savedChat,
       });
       const savedGroup = await queryRunner.manager.save(group);
 
-      // Создание членства пользователя как администратора группы
       const membership = this.membershipRepository.create({
         user: user,
         group: savedGroup,
@@ -62,7 +69,6 @@ export class GroupService {
       });
       await queryRunner.manager.save(membership);
 
-      // Добавление пользователя как администратора в чат
       const userChat = this.userChatRepository.create({
         user,
         chat,
@@ -70,25 +76,28 @@ export class GroupService {
       });
       await queryRunner.manager.save(userChat);
 
-      // Связывание чата с группой и добавление администратора в массив пользователей чата
       chat.group = group;
       await queryRunner.manager.save(chat);
 
-      // Подтверждение транзакции
       await queryRunner.commitTransaction();
 
       return savedGroup;
     } catch (error) {
-      // Откат транзакции при возникновении ошибки
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      // Освобождение queryRunner
       await queryRunner.release();
     }
   }
 
   async getGroupById(id: number): Promise<Group> {
+    const cacheKey = `group_${id}`;
+    const cachedGroup = await this.cacheService.get<Group>(cacheKey);
+
+    if (cachedGroup) {
+      return cachedGroup;
+    }
+
     const group = await this.groupRepository.findOne({
       where: { id },
       relations: ['chat'],
@@ -96,6 +105,9 @@ export class GroupService {
     if (!group) {
       throw new NotFoundException(`Group with ID ${id} not found`);
     }
+    
+    await this.cacheService.set(cacheKey, group, this.cacheTtl);
+
     return group;
   }
 
@@ -117,33 +129,39 @@ export class GroupService {
     if (result.affected === 0) {
       throw new NotFoundException(`Group with ID ${id} not found`);
     }
+
+    // Удаляем кэш после удаления группы
+    await this.cacheService.del(`group_${id}`);
   }
 
   async searchGroups(searchParams: SearchGroupDto): Promise<Group[]> {
+    const cacheKey = `search_groups_${JSON.stringify(searchParams)}`;
+    const cachedGroups = await this.cacheService.get<Group[]>(cacheKey);
+
+    if (cachedGroups) {
+      return cachedGroups;
+    }
+
     const query = this.groupRepository.createQueryBuilder('group');
 
-    // Фильтрация по имени
     if (searchParams.name) {
       query.andWhere('group.name ILIKE :name', {
         name: `%${searchParams.name}%`,
       });
     }
 
-    // Фильтрация по городу
     if (searchParams.city) {
       query.andWhere('group.city ILIKE :city', {
         city: `%${searchParams.city}%`,
       });
     }
 
-    // Фильтрация по месту
     if (searchParams.location) {
       query.andWhere('group.location ILIKE :location', {
         location: `%${searchParams.location}%`,
       });
     }
 
-    // Фильтрация по возрасту
     if (searchParams.minAge) {
       query.andWhere('group.minAge >= :minAge', {
         minAge: searchParams.minAge,
@@ -155,27 +173,23 @@ export class GroupService {
       });
     }
 
-    // Фильтрация по количеству участников
     if (searchParams.maxMembers) {
       query.andWhere('group.maxMembers >= :maxMembers', {
         maxMembers: searchParams.maxMembers,
       });
     }
 
-    // Фильтрация по категориям
     if (searchParams.categories) {
-      // Преобразуем строку категорий в массив
       const categoriesArray = searchParams.categories.split(',').map(category => category.trim());
       const valuesGroupCategory = Object.values(GroupCategory);
-      // Проверяем, что все элементы массива являются допустимыми категориями
+
       const parsedCategories = categoriesArray.map(category => {
         if (!valuesGroupCategory.includes(category as GroupCategory)) {
-            throw new BadRequestException(`Invalid category: ${category}`);
+          throw new BadRequestException(`Invalid category: ${category}`);
         }
         return category as GroupCategory;
       });
 
-      // Проверка на уникальность
       if (new Set(parsedCategories).size !== parsedCategories.length) {
         throw new BadRequestException('All categories\'s elements must be unique');
       }
@@ -184,6 +198,10 @@ export class GroupService {
       });
     }
 
-    return query.getMany();
+    const groups = await query.getMany();
+    
+    await this.cacheService.set(cacheKey, groups, this.cacheTtl);
+
+    return groups;
   }
 }

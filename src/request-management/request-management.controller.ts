@@ -21,7 +21,8 @@ export class RequestController {
   async createRequest(
     @Body() createRequestDto: CreateGroupDto,
   ): Promise<Request> {
-    return this.requestService.createRequest(createRequestDto);
+    const userId = 1; // из JWT
+    return this.requestService.createRequest(userId, createRequestDto);
   }
 
   // Получение всех заявок для группы

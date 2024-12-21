@@ -29,8 +29,8 @@ export class RequestService {
   ) {}
 
   // Создание новой заявки на вступление в группу
-  async createRequest(createGroupDto: CreateGroupDto): Promise<Request> {
-    const { userId, groupId } = createGroupDto;
+  async createRequest(userId: number, createGroupDto: CreateGroupDto): Promise<Request> {
+    const { groupId } = createGroupDto;
     const user = await this.userRepository.findOne({ where: { id: userId } });
     const group = await this.groupRepository.findOne({
       where: { id: groupId },
