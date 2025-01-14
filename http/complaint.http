@@ -1,0 +1,44 @@
+### Создать жалобу на кружок
+POST http://localhost:3000/complaints
+Content-Type: application/json
+
+{
+  "reason": "spam",
+  "userId": 101,
+  "groupId": 1
+}
+
+###
+
+### Создать жалобу на пользователя
+POST http://localhost:3000/complaints
+Content-Type: application/json
+
+{
+  "reason": "abuse",
+  "groupId": 1
+}
+
+###
+
+### Получить все жалобы (пагинация)
+GET http://localhost:3000/complaints?page=1&limit=10
+
+###
+
+### Получить жалобы на конкретный кружок
+GET http://localhost:3000/complaints/group/1
+
+###
+
+### Получить жалобы на конкретного пользователя
+GET http://localhost:3000/complaints/user/2
+
+###
+
+### Удалить жалобу (только администратор или модератор)
+DELETE http://localhost:3000/complaints/5
+Authorization: Bearer <JWT_TOKEN>
+
+###
+

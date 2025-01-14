@@ -14,6 +14,7 @@ services:
   minio:
     image: minio/minio
     container_name: minio
+    restart: always
     ports:
       - "9000:9000"
       - "9001:9001"

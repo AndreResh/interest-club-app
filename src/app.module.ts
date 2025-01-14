@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from '@nestjs-modules/ioredis';
 
 import { GroupsModule } from './groups/groups.module';
@@ -11,6 +10,7 @@ import { RequestManagementModule } from './request-management/request-management
 import { UsersModule } from './users/users.module';
 import { QuestionnaireModule } from './questionnaire/questionnaire.module';
 import { ReviewModule } from './review/review.module';
+import { ComplaintModule } from './complaint/complaint.module';
 
 @Module({
   imports: [
@@ -43,6 +43,7 @@ import { ReviewModule } from './review/review.module';
     UsersModule,
     QuestionnaireModule,
     ReviewModule,
+    ComplaintModule,
   ],
 })
 export class AppModule {}
